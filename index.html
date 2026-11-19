@@ -25,7 +25,7 @@
           </svg>
         </div>
         <h1 class="text-2xl font-bold text-white tracking-tight">VaultShare Privado</h1>
-        <p class="text-sm text-slate-400 mt-1">Acceso autenticado con Supabase Auth + RLS</p>
+        <p class="text-sm text-slate-400 mt-1">Almacenamiento cifrado con Supabase Storage + RLS</p>
       </div>
 
       <form id="login-form" class="space-y-5">
@@ -53,7 +53,6 @@
 
   <!-- PANEL PRINCIPAL (AUTENTICADO) -->
   <div id="app-view" class="hidden min-h-screen flex flex-col">
-    <!-- Cabecera -->
     <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-20">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -62,7 +61,7 @@
           </div>
           <div>
             <span class="font-semibold text-white block leading-none">VaultShare</span>
-            <span class="text-[11px] text-slate-400">Inventario Postgres + RLS</span>
+            <span class="text-[11px] text-slate-400">Bucket Privado • Supabase Storage</span>
           </div>
         </div>
 
@@ -77,23 +76,22 @@
       </div>
     </header>
 
-    <!-- Contenido -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
-      <!-- Banner de estado / notificaciones -->
-      <div id="toast-banner" class="hidden p-4 rounded-xl border text-sm flex items-center justify-between">
+      <!-- Banner de notificaciones -->
+      <div id="toast-banner" class="hidden p-4 rounded-xl border text-xs flex items-center justify-between">
         <span id="toast-message"></span>
         <button onclick="document.getElementById('toast-banner').classList.add('hidden')" class="text-xs opacity-75 hover:opacity-100 ml-4">Cerrar</button>
       </div>
 
-      <!-- Sección de registro / subida de archivo -->
+      <!-- Sección de subida real de archivo -->
       <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
           <div>
-            <h2 class="text-base font-semibold text-white">Registrar / Subir nuevo archivo</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Selecciona un archivo para calcular sus metadatos y guardarlo en el inventario protegido.</p>
+            <h2 class="text-base font-semibold text-white">Subir nuevo archivo</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Se almacena cifrado en tu bucket privado (máx. 50 MB por archivo en plan gratuito).</p>
           </div>
-          <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
-            Fase 2: Inventario Postgres activo (R2 pendiente de Edge Function)
+          <span id="storage-usage-badge" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+            Espacio usado: 0 MB / 1024 MB
           </span>
         </div>
 
@@ -114,7 +112,7 @@
           <div class="md:col-span-3">
             <button id="upload-btn" type="submit"
               class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20">
-              Guardar en inventario
+              Subir archivo
             </button>
           </div>
         </form>
@@ -124,7 +122,7 @@
       <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <div class="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="flex items-center gap-2.5">
-            <h3 class="text-base font-semibold text-white">Archivos en el repositorio</h3>
+            <h3 class="text-base font-semibold text-white">Archivos disponibles</h3>
             <span id="files-count" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300">0</span>
           </div>
 
@@ -156,8 +154,8 @@
         </div>
 
         <div id="empty-state" class="hidden py-14 px-6 text-center">
-          <p class="text-sm font-medium text-slate-300">No hay archivos registrados todavía</p>
-          <p class="text-xs text-slate-500 mt-1">Sube un archivo arriba para comprobar la inserción en Postgres con RLS.</p>
+          <p class="text-sm font-medium text-slate-300">No hay archivos en el repositorio</p>
+          <p class="text-xs text-slate-500 mt-1">Selecciona un archivo arriba y pulsa "Subir archivo".</p>
         </div>
       </section>
     </main>
@@ -168,7 +166,7 @@
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
       <h3 class="text-lg font-semibold text-white">Eliminar archivo definitivamente</h3>
       <p class="text-xs text-slate-400 mt-2">
-        ¿Estás segura de que deseas eliminar <strong id="delete-file-name" class="text-slate-200"></strong>? Esta acción eliminará el registro de la base de datos.
+        ¿Estás segura de que deseas eliminar <strong id="delete-file-name" class="text-slate-200"></strong>? Se borrará tanto del almacenamiento como del inventario.
       </p>
       <div class="mt-6 flex justify-end gap-3">
         <button id="cancel-delete-btn" type="button"
@@ -190,6 +188,8 @@
     const SUPABASE_URL = 'https://waihazzpkagjuhtzgykb.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_MP2DESbzmTG7-JvoWnxS4Q_8JIv_hFD';
     const ADMIN_EMAIL = 'csenderos@gmail.com';
+    const STORAGE_BUCKET = 'vaultshare';
+    const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB límite plan gratuito
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -197,7 +197,7 @@
     let currentUser = null;
     let isAdmin = false;
     let allFiles = [];
-    let pendingDeleteId = null;
+    let pendingDeleteItem = null;
 
     // Elementos del DOM
     const loginView = document.getElementById('login-view');
@@ -212,6 +212,7 @@
     const filesTbody = document.getElementById('files-tbody');
     const emptyState = document.getElementById('empty-state');
     const filesCount = document.getElementById('files-count');
+    const storageUsageBadge = document.getElementById('storage-usage-badge');
     const searchInput = document.getElementById('search-input');
     const refreshBtn = document.getElementById('refresh-btn');
     const deleteModal = document.getElementById('delete-modal');
@@ -238,7 +239,7 @@
     function formatBytes(bytes) {
       if (!bytes || bytes === 0) return '0 B';
       const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const sizes = ['B', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
@@ -247,6 +248,12 @@
       return new Date(isoString).toLocaleString('es-ES', {
         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
+    }
+
+    function sanitizeFileName(name) {
+      return name
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_');
     }
 
     // Gestión de sesión
@@ -275,7 +282,7 @@
         roleBadge.textContent = 'Administradora (Control total)';
         roleBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium border bg-indigo-500/10 border-indigo-500/30 text-indigo-300';
       } else {
-        roleBadge.textContent = 'Colaborador (Subida / Lectura)';
+        roleBadge.textContent = 'Colaborador (Subida / Descarga)';
         roleBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-800 border-slate-700 text-slate-300';
       }
 
@@ -284,7 +291,7 @@
       loadFiles();
     }
 
-    // Login submit
+    // Login
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       loginError.classList.add('hidden');
@@ -316,7 +323,7 @@
       showLogin();
     });
 
-    // Cargar inventario desde Postgres (SELECT)
+    // Cargar inventario desde Postgres
     async function loadFiles() {
       const { data, error } = await supabaseClient
         .from('archivos')
@@ -329,6 +336,8 @@
       }
 
       allFiles = data || [];
+      const totalBytes = allFiles.reduce((acc, item) => acc + (item.tamano_bytes || 0), 0);
+      storageUsageBadge.textContent = `Espacio usado: ${formatBytes(totalBytes)} / 1 GB`;
       renderFiles();
     }
 
@@ -355,27 +364,35 @@
           ? '<span class="px-2 py-0.5 rounded-md text-[11px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Permanente</span>'
           : '<span class="px-2 py-0.5 rounded-md text-[11px] bg-slate-800 text-slate-400">Estándar</span>';
 
-        // Botones de acción según rol
-        let actionsHtml = '';
+        const safeName = file.nombre.replace(/'/g, "\\'");
+        const safeKey = file.r2_key.replace(/'/g, "\\'");
+
+        // Botón Descargar (para todos los usuarios autenticados)
+        let actionsHtml = `
+          <button onclick="downloadFile('${safeKey}', '${safeName}')"
+            class="px-3 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs font-medium text-emerald-300 transition mr-1.5">
+            Descargar
+          </button>
+        `;
+
+        // Botones extra solo para Administradora
         if (isAdmin) {
-          actionsHtml = `
+          actionsHtml += `
             <button onclick="togglePermanent('${file.id}', ${!file.es_permanente})"
               class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 transition mr-1.5">
               ${file.es_permanente ? 'Quitar fijo' : 'Fijar'}
             </button>
-            <button onclick="openDeleteModal('${file.id}', '${file.nombre.replace(/'/g, "\\'")}')"
+            <button onclick="openDeleteModal('${file.id}', '${safeKey}', '${safeName}')"
               class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs text-rose-300 transition">
               Eliminar
             </button>
           `;
-        } else {
-          actionsHtml = `<span class="text-[11px] text-slate-500">Solo lectura / subida</span>`;
         }
 
         tr.innerHTML = `
           <td class="py-3.5 px-6">
             <div class="font-medium text-slate-100">${file.nombre}</div>
-            <div class="text-[11px] text-slate-500 font-mono mt-0.5">${file.r2_key} ${isMine ? '• Subido por ti' : ''}</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">${isMine ? 'Subido por ti' : 'Subido por otro miembro'}</div>
           </td>
           <td class="py-3.5 px-4 text-xs text-slate-300 whitespace-nowrap">${formatBytes(file.tamano_bytes)}</td>
           <td class="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">${formatDate(file.creado_en)}</td>
@@ -386,45 +403,90 @@
       });
     }
 
-    // Registrar archivo en Postgres (INSERT)
+    // Subida real a Supabase Storage + registro en Postgres
     uploadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fileInput = document.getElementById('file-input');
       const file = fileInput.files[0];
       if (!file) return;
 
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        showToast('El archivo supera los 50 MB permitidos en el plan gratuito de Supabase Storage.', 'error');
+        return;
+      }
+
       const uploadBtn = document.getElementById('upload-btn');
       uploadBtn.disabled = true;
-      uploadBtn.textContent = 'Guardando...';
+      uploadBtn.textContent = 'Subiendo archivo...';
 
       const esPermanente = document.getElementById('permanent-checkbox').checked;
-      const uniqueKey = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      const storagePath = `${currentUser.id}/${Date.now()}_${sanitizeFileName(file.name)}`;
 
-      const { error } = await supabaseClient
+      // 1. Subir archivo físico al bucket privado 'vaultshare'
+      const { error: uploadError } = await supabaseClient.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, file, {
+          contentType: file.type || 'application/octet-stream',
+          upsert: false
+        });
+
+      if (uploadError) {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Subir archivo';
+        showToast('Error al subir archivo al almacenamiento: ' + uploadError.message, 'error');
+        return;
+      }
+
+      // 2. Guardar metadatos en la tabla Postgres 'archivos'
+      const { error: dbError } = await supabaseClient
         .from('archivos')
         .insert([{
           nombre: file.name,
           tamano_bytes: file.size,
           mime_type: file.type || 'application/octet-stream',
-          r2_key: uniqueKey,
+          r2_key: storagePath,
           subido_por: currentUser.id,
           es_permanente: esPermanente
         }]);
 
       uploadBtn.disabled = false;
-      uploadBtn.textContent = 'Guardar en inventario';
+      uploadBtn.textContent = 'Subir archivo';
 
-      if (error) {
-        showToast('Error al registrar archivo: ' + error.message, 'error');
+      if (dbError) {
+        // Si fallara el registro en BD, limpiar el objeto huérfano
+        await supabaseClient.storage.from(STORAGE_BUCKET).remove([storagePath]);
+        showToast('Error al registrar metadatos: ' + dbError.message, 'error');
         return;
       }
 
       uploadForm.reset();
-      showToast('Archivo registrado correctamente en Supabase Postgres.', 'success');
+      showToast('Archivo subido y disponible para descarga.', 'success');
       loadFiles();
     });
 
-    // Actualizar estado (UPDATE - protegido por RLS solo para Admin)
+    // Descargar archivo real mediante URL firmada temporal (5 minutos)
+    window.downloadFile = async (storagePath, originalName) => {
+      showToast('Generando enlace seguro de descarga...', 'info');
+
+      const { data, error } = await supabaseClient.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(storagePath, 300, { download: originalName });
+
+      if (error || !data?.signedUrl) {
+        showToast('No se pudo descargar el archivo (puede ser un registro de prueba sin fichero físico): ' + (error?.message || ''), 'error');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Descarga iniciada: ' + originalName, 'success');
+    };
+
+    // Actualizar estado (solo Admin)
     window.togglePermanent = async (id, newValue) => {
       const { error } = await supabaseClient
         .from('archivos')
@@ -432,43 +494,49 @@
         .eq('id', id);
 
       if (error) {
-        showToast('Operación bloqueada por seguridad (RLS): ' + error.message, 'error');
+        showToast('Operación bloqueada por RLS: ' + error.message, 'error');
         return;
       }
       loadFiles();
     };
 
-    // Modal y borrado (DELETE - protegido por RLS solo para Admin)
-    window.openDeleteModal = (id, name) => {
-      pendingDeleteId = id;
+    // Modal y borrado completo (Storage + Postgres, solo Admin)
+    window.openDeleteModal = (id, storagePath, name) => {
+      pendingDeleteItem = { id, storagePath };
       deleteFileName.textContent = name;
       deleteModal.classList.remove('hidden');
     };
 
     cancelDeleteBtn.addEventListener('click', () => {
-      pendingDeleteId = null;
+      pendingDeleteItem = null;
       deleteModal.classList.add('hidden');
     });
 
     confirmDeleteBtn.addEventListener('click', async () => {
-      if (!pendingDeleteId) return;
+      if (!pendingDeleteItem) return;
       confirmDeleteBtn.disabled = true;
 
+      const { id, storagePath } = pendingDeleteItem;
+
+      // 1. Eliminar fichero físico en Supabase Storage
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove([storagePath]);
+
+      // 2. Eliminar registro en Postgres
       const { error } = await supabaseClient
         .from('archivos')
         .delete()
-        .eq('id', pendingDeleteId);
+        .eq('id', id);
 
       confirmDeleteBtn.disabled = false;
       deleteModal.classList.add('hidden');
-      pendingDeleteId = null;
+      pendingDeleteItem = null;
 
       if (error) {
         showToast('Borrado rechazado por RLS: ' + error.message, 'error');
         return;
       }
 
-      showToast('Archivo eliminado del inventario.', 'success');
+      showToast('Archivo eliminado definitivamente del almacenamiento y del inventario.', 'success');
       loadFiles();
     });
 
