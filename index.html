@@ -1,1240 +1,482 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultShare — Intercambio Privado de Archivos</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        /* Estilos personalizados mínimos para scrollbars y transiciones suaves */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f8fafc;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        .drag-active {
-            border-color: #4f46e5 !important;
-            background-color: #eef2ff !important;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultShare Privado — Portal Seguro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
 
-    <!-- ===================================================================== -->
-    <!-- CONTENEDOR DE NOTIFICACIONES (TOASTS)                                 -->
-    <!-- ===================================================================== -->
-    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
-
-    <!-- ===================================================================== -->
-    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO (Sin usar alert/confirm)          -->
-    <!-- ===================================================================== -->
-    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 transition-opacity">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 transform transition-all">
-            <div class="flex items-start gap-4">
-                <div class="p-3 bg-rose-50 text-rose-600 rounded-xl shrink-0">
-                    <i data-lucide="trash-2" class="w-6 h-6"></i>
-                </div>
-                <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-slate-900">Eliminar archivo definitivamente</h3>
-                    <p id="confirmModalText" class="text-sm text-slate-600 mt-1">
-                        ¿Estás segura de que deseas eliminar este archivo? Esta acción liberará espacio en el bucket pero no se puede deshacer.
-                    </p>
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
-                    Cancelar
-                </button>
-                <button type="button" id="confirmDeleteBtn" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-colors flex items-center gap-2">
-                    <i data-lucide="trash" class="w-4 h-4"></i>
-                    <span>Sí, eliminar</span>
-                </button>
-            </div>
+  <!-- PANTALLA DE INICIO DE SESIÓN -->
+  <main id="login-view" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 mb-4">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
         </div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">VaultShare Privado</h1>
+        <p class="text-sm text-slate-400 mt-1">Acceso autenticado con Supabase Auth + RLS</p>
+      </div>
+
+      <form id="login-form" class="space-y-5">
+        <div>
+          <label for="email" class="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">Correo electrónico</label>
+          <input id="email" type="email" required autocomplete="email" placeholder="usuario@dominio.com"
+            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition" />
+        </div>
+
+        <div>
+          <label for="password" class="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">Contraseña</label>
+          <input id="password" type="password" required autocomplete="current-password" placeholder="••••••••••••"
+            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition" />
+        </div>
+
+        <div id="login-error" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs"></div>
+
+        <button id="login-btn" type="submit"
+          class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2">
+          <span>Entrar al repositorio</span>
+        </button>
+      </form>
     </div>
+  </main>
 
-    <!-- ===================================================================== -->
-    <!-- MODAL GUÍA DE DESPLIEGUE REAL Y SEGURIDAD (NETLIFY + SUPABASE + R2)   -->
-    <!-- ===================================================================== -->
-    <div id="architectureModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full my-auto max-h-[90vh] flex flex-col overflow-hidden">
-            <!-- Header Modal -->
-            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-brand-600 text-white rounded-xl">
-                        <i data-lucide="shield-check" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-900">Guía de Despliegue Real, Gratis y Seguro</h2>
-                        <p class="text-xs text-slate-500">Arquitectura: Netlify (Frontend) + Supabase Auth (Roles) + Cloudflare R2 (10 GB Gratis)</p>
-                    </div>
-                </div>
-                <button onclick="toggleArchitectureModal(false)" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <!-- Contenido Scrolleable -->
-            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-700 leading-relaxed">
-                
-                <!-- Aviso de seguridad importante -->
-                <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
-                    <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
-                    <div>
-                        <h4 class="font-semibold text-amber-900">¿Por qué no guardar contraseñas ni archivos directamente en Netlify?</h4>
-                        <p class="text-amber-800 text-xs mt-1">
-                            Un sitio estático en Netlify entrega todo su código HTML/JS al navegador del usuario. Si pones contraseñas en el código JS, cualquiera que pulse <em>F12 (Inspeccionar)</em> las verá. Además, Netlify limita el tráfico gratis a 15 GB/mes. La solución profesional gratuita separa la interfaz, la autenticación y el almacenamiento:
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Pasos de arquitectura -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-                        <div class="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                            <span class="w-6 h-6 rounded-full bg-brand-600 text-white text-xs flex items-center justify-center">1</span>
-                            <span>Frontend en Netlify</span>
-                        </div>
-                        <p class="text-xs text-slate-600">
-                            Sube este único archivo <code class="bg-slate-200 px-1 rounded">index.html</code> a Netlify Drop o GitHub. Consume menos de 50 KB por visita, por lo que tu cuota de Netlify jamás se agotará.
-                        </p>
-                    </div>
-
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-                        <div class="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                            <span class="w-6 h-6 rounded-full bg-brand-600 text-white text-xs flex items-center justify-center">2</span>
-                            <span>Supabase Auth + RLS</span>
-                        </div>
-                        <p class="text-xs text-slate-600">
-                            Crea 2 usuarios en <strong>Supabase</strong> (gratuito). Guarda el inventario de archivos en una tabla Postgres protegida con <em>Row Level Security (RLS)</em> según el rol.
-                        </p>
-                    </div>
-
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-                        <div class="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                            <span class="w-6 h-6 rounded-full bg-brand-600 text-white text-xs flex items-center justify-center">3</span>
-                            <span>Cloudflare R2 (10 GB)</span>
-                        </div>
-                        <p class="text-xs text-slate-600">
-                            Almacena archivos de hasta 5 TB sin coste de descarga (0 € egress). Una Edge Function genera <strong>URLs firmadas (Presigned URLs)</strong> válidas por 15 minutos.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Reglas de permisos SQL -->
-                <div>
-                    <h3 class="font-bold text-slate-900 text-base mb-2 flex items-center gap-2">
-                        <i data-lucide="database" class="w-4 h-4 text-brand-600"></i>
-                        Políticas de Seguridad Real (Supabase RLS)
-                    </h3>
-                    <p class="text-xs text-slate-600 mb-3">
-                        Con estas reglas en tu base de datos, incluso si el segundo usuario intenta manipular el código del navegador, el servidor rechazará cualquier borrado o modificación:
-                    </p>
-                    <div class="relative">
-                        <pre id="sqlCodeBlock" class="bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-xs overflow-x-auto leading-relaxed">-- 1. Tabla de inventario de archivos
-CREATE TABLE archivos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nombre TEXT NOT NULL,
-  tamano_bytes BIGINT NOT NULL,
-  r2_key TEXT NOT NULL UNIQUE,
-  subido_por UUID REFERENCES auth.users(id) NOT NULL,
-  es_permanente BOOLEAN DEFAULT false,
-  creado_en TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE archivos ENABLE ROW LEVEL SECURITY;
-
--- 2. AMBOS usuarios pueden ver (SELECT) y subir (INSERT)
-CREATE POLICY "Todos ven archivos" ON archivos FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Todos suben archivos" ON archivos FOR INSERT TO authenticated WITH CHECK (auth.uid() = subido_por);
-
--- 3. SOLO TÚ (Admin) puedes modificar (UPDATE) o borrar (DELETE)
-CREATE POLICY "Solo Admin actualiza" ON archivos FOR UPDATE TO authenticated 
-  USING (auth.jwt() ->> 'email' = 'cristina@tudominio.com');
-
-CREATE POLICY "Solo Admin elimina" ON archivos FOR DELETE TO authenticated 
-  USING (auth.jwt() ->> 'email' = 'cristina@tudominio.com');</pre>
-                        <button onclick="copySqlCode()" class="absolute top-3 right-3 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors">
-                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                            <span>Copiar SQL</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Flujo de URLs Firmadas -->
-                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4">
-                    <h4 class="font-semibold text-indigo-950 text-sm mb-1 flex items-center gap-2">
-                        <i data-lucide="key-round" class="w-4 h-4 text-brand-600"></i>
-                        ¿Cómo funciona la subida/descarga pesada sin pasar por Netlify?
-                    </h4>
-                    <ol class="list-decimal list-inside text-xs text-indigo-900 space-y-1.5 mt-2">
-                        <li>El usuario selecciona un archivo de <strong>3 GB</strong> en esta web.</li>
-                        <li>La web pide a una <em>Supabase Edge Function</em> un permiso temporal de subida (<strong>Presigned PUT URL</strong>) para Cloudflare R2.</li>
-                        <li>El navegador envía los 3 GB <strong>directamente a Cloudflare R2</strong> (sin límites de tamaño de Netlify ni de Supabase).</li>
-                        <li>Cuando tú pulsa "Eliminar", la función borra el objeto en R2 y el registro en Postgres. El colaborador nunca recibe permisos `DELETE` de R2.</li>
-                    </ol>
-                </div>
-            </div>
-
-            <!-- Footer Modal -->
-            <div class="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex justify-end">
-                <button onclick="toggleArchitectureModal(false)" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-colors">
-                    Entendido, volver al portal
-                </button>
-            </div>
+  <!-- PANEL PRINCIPAL (AUTENTICADO) -->
+  <div id="app-view" class="hidden min-h-screen flex flex-col">
+    <!-- Cabecera -->
+    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-20">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow">
+            V
+          </div>
+          <div>
+            <span class="font-semibold text-white block leading-none">VaultShare</span>
+            <span class="text-[11px] text-slate-400">Inventario Postgres + RLS</span>
+          </div>
         </div>
-    </div>
 
-    <!-- ===================================================================== -->
-    <!-- VISTA 1: PANTALLA DE INICIO DE SESIÓN (LOGIN)                         -->
-    <!-- ===================================================================== -->
-    <main id="loginView" class="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div class="w-full max-w-md">
-            <!-- Logo y Cabecera -->
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/20 mb-4">
-                    <i data-lucide="lock" class="w-7 h-7"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">VaultShare Privado</h1>
-                <p class="text-sm text-slate-500 mt-1">Intercambio seguro de archivos pesados con control de permisos</p>
-            </div>
-
-            <!-- Tarjeta de Login -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
-                <form id="loginForm" class="space-y-4">
-                    <div>
-                        <label for="usernameInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Usuario</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                <i data-lucide="user" class="w-4 h-4"></i>
-                            </div>
-                            <input type="text" id="usernameInput" required autocomplete="username" placeholder="Ej. cristina o colaborador"
-                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="passwordInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contraseña</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                <i data-lucide="key" class="w-4 h-4"></i>
-                            </div>
-                            <input type="password" id="passwordInput" required autocomplete="current-password" placeholder="••••••••"
-                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
-                        </div>
-                    </div>
-
-                    <div id="loginError" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-                        <span>Usuario o contraseña incorrectos. Usa los accesos rápidos abajo.</span>
-                    </div>
-
-                    <button type="submit" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-xl shadow-sm shadow-brand-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                        <span>Iniciar sesión</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </form>
-
-                <!-- Separador Accesos Rápidos Demo -->
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-200"></div>
-                    </div>
-                    <div class="relative flex justify-center text-xs">
-                        <span class="px-3 bg-white text-slate-400 font-medium">Acceso rápido de demostración</span>
-                    </div>
-                </div>
-
-                <!-- Botones Demo de los 2 Perfiles -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button type="button" onclick="quickLogin('admin')" class="p-3 rounded-xl border border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100/70 text-left transition-all group cursor-pointer">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold text-brand-700">Cristina (Tú)</span>
-                            <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-brand-600 text-white rounded-md">ADMIN</span>
-                        </div>
-                        <p class="text-[11px] text-slate-600 leading-tight">Sube, descarga, fija y elimina archivos.</p>
-                        <p class="text-[10px] font-mono text-slate-400 mt-1.5">user: cristina / pass: admin123</p>
-                    </button>
-
-                    <button type="button" onclick="quickLogin('guest')" class="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-all group cursor-pointer">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold text-slate-800">Usuario 2</span>
-                            <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-600 text-white rounded-md">INVITADO</span>
-                        </div>
-                        <p class="text-[11px] text-slate-600 leading-tight">Solo sube y descarga. Sin permiso de borrado.</p>
-                        <p class="text-[10px] font-mono text-slate-400 mt-1.5">user: colaborador / pass: invitado123</p>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Enlace a Guía Técnica -->
-            <div class="mt-6 text-center">
-                <button type="button" onclick="toggleArchitectureModal(true)" class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-brand-600 transition-colors">
-                    <i data-lucide="server" class="w-3.5 h-3.5"></i>
-                    <span>¿Cómo desplegar esto gratis con 10 GB reales en Netlify + Cloudflare R2?</span>
-                </button>
-            </div>
+        <div class="flex items-center gap-3">
+          <span id="role-badge" class="px-2.5 py-1 rounded-full text-xs font-medium border"></span>
+          <span id="user-email-display" class="hidden sm:inline text-xs text-slate-400"></span>
+          <button id="logout-btn"
+            class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition">
+            Cerrar sesión
+          </button>
         </div>
+      </div>
+    </header>
+
+    <!-- Contenido -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <!-- Banner de estado / notificaciones -->
+      <div id="toast-banner" class="hidden p-4 rounded-xl border text-sm flex items-center justify-between">
+        <span id="toast-message"></span>
+        <button onclick="document.getElementById('toast-banner').classList.add('hidden')" class="text-xs opacity-75 hover:opacity-100 ml-4">Cerrar</button>
+      </div>
+
+      <!-- Sección de registro / subida de archivo -->
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+          <div>
+            <h2 class="text-base font-semibold text-white">Registrar / Subir nuevo archivo</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Selecciona un archivo para calcular sus metadatos y guardarlo en el inventario protegido.</p>
+          </div>
+          <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+            Fase 2: Inventario Postgres activo (R2 pendiente de Edge Function)
+          </span>
+        </div>
+
+        <form id="upload-form" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <div class="md:col-span-6">
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Seleccionar archivo del equipo</label>
+            <input id="file-input" type="file" required
+              class="block w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer" />
+          </div>
+
+          <div class="md:col-span-3 flex items-center h-10">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input id="permanent-checkbox" type="checkbox" class="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500" />
+              <span class="text-xs text-slate-300">Marcar como permanente</span>
+            </label>
+          </div>
+
+          <div class="md:col-span-3">
+            <button id="upload-btn" type="submit"
+              class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20">
+              Guardar en inventario
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Tabla de inventario -->
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-2.5">
+            <h3 class="text-base font-semibold text-white">Archivos en el repositorio</h3>
+            <span id="files-count" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300">0</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input id="search-input" type="text" placeholder="Buscar por nombre..."
+              class="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+            <button id="refresh-btn" type="button" title="Recargar lista"
+              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-950/40">
+                <th class="py-3.5 px-6">Archivo</th>
+                <th class="py-3.5 px-4">Tamaño</th>
+                <th class="py-3.5 px-4">Fecha</th>
+                <th class="py-3.5 px-4">Estado</th>
+                <th class="py-3.5 px-6 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="files-tbody" class="divide-y divide-slate-800/80 text-sm"></tbody>
+          </table>
+        </div>
+
+        <div id="empty-state" class="hidden py-14 px-6 text-center">
+          <p class="text-sm font-medium text-slate-300">No hay archivos registrados todavía</p>
+          <p class="text-xs text-slate-500 mt-1">Sube un archivo arriba para comprobar la inserción en Postgres con RLS.</p>
+        </div>
+      </section>
     </main>
+  </div>
 
-    <!-- ===================================================================== -->
-    <!-- VISTA 2: PANEL PRINCIPAL DE GESTIÓN E INTERCAMBIO DE ARCHIVOS         -->
-    <!-- ===================================================================== -->
-    <div id="dashboardView" class="hidden flex-1 flex-col">
-        
-        <!-- Barra Superior de Navegación -->
-        <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-                <!-- Marca -->
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
-                        <i data-lucide="hard-drive" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <span class="font-bold text-slate-900 text-base tracking-tight block leading-none">VaultShare</span>
-                        <span class="text-[11px] text-slate-400 font-medium">Bucket Privado R2</span>
-                    </div>
-                </div>
-
-                <!-- Controles Derechos: Guía + Perfil Activo + Salir -->
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <button onclick="toggleArchitectureModal(true)" class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl border border-brand-200/70 transition-colors cursor-pointer">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                        <span>Despliegue Real Gratis</span>
-                    </button>
-
-                    <!-- Indicador de Rol Activo -->
-                    <div id="roleBadgeContainer" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium">
-                        <!-- Rellenado dinámicamente -->
-                    </div>
-
-                    <button onclick="logout()" title="Cerrar sesión" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer">
-                        <i data-lucide="log-out" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Contenido Principal -->
-        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 flex-1">
-            
-            <!-- Banner de Rol / Permisos + Cuota (Solo Admin ve la cuota completa) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <!-- Tarjeta Bienvenida y Explicación de Permisos -->
-                <div id="roleInfoCard" class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-                    <div class="flex items-start gap-3.5">
-                        <div id="roleIconBox" class="p-3 rounded-xl shrink-0">
-                            <!-- Icono dinámico -->
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h2 id="welcomeTitle" class="font-bold text-slate-900 text-base">Hola</h2>
-                                <span id="rolePill" class="px-2 py-0.5 text-[11px] font-semibold rounded-full"></span>
-                            </div>
-                            <p id="roleDescription" class="text-xs text-slate-600 mt-1 leading-relaxed"></p>
-                        </div>
-                    </div>
-                    <button onclick="toggleArchitectureModal(true)" class="md:hidden inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-brand-700 bg-brand-50 rounded-xl border border-brand-200 shrink-0">
-                        <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                        <span>Guía Netlify + R2</span>
-                    </button>
-                </div>
-
-                <!-- Tarjeta de Almacenamiento (Visible solo para Admin) o Estado Seguro (Para Colaborador) -->
-                <div id="storageCard" class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-center">
-                    <!-- Rellenado dinámicamente según rol -->
-                </div>
-            </div>
-
-            <!-- Zona de Subida de Archivos (Disponible para AMBOS roles) -->
-            <section class="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
-                            <i data-lucide="upload-cloud" class="w-5 h-5 text-brand-600"></i>
-                            <span>Subir nuevos documentos o archivos pesados</span>
-                        </h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Soporta vídeos, comprimidos ZIP/RAR, proyectos o documentos grandes.</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Dropzone -->
-                    <div id="dropZone" class="lg:col-span-2 border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-2xl p-6 text-center transition-all cursor-pointer bg-slate-50/50 hover:bg-brand-50/30 flex flex-col items-center justify-center min-h-[150px]">
-                        <input type="file" id="fileInput" class="hidden" multiple>
-                        <div class="w-11 h-11 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mb-3">
-                            <i data-lucide="file-up" class="w-5 h-5"></i>
-                        </div>
-                        <p class="text-sm font-semibold text-slate-800">Arrastra tus archivos aquí o <span class="text-brand-600 underline">examina tu equipo</span></p>
-                        <p class="text-xs text-slate-400 mt-1">Sin límite de formato • Transferencia directa cifrada</p>
-                        <p id="selectedFilesPreview" class="text-xs font-medium text-brand-700 mt-2 hidden"></p>
-                    </div>
-
-                    <!-- Opciones de subida y botón -->
-                    <div class="flex flex-col justify-between bg-slate-50 rounded-2xl p-4 border border-slate-200/70 space-y-3">
-                        <div>
-                            <label for="fileNoteInput" class="block text-xs font-semibold text-slate-700 mb-1">Nota o descripción (opcional)</label>
-                            <input type="text" id="fileNoteInput" placeholder="Ej. Vídeo bruto cámara 1, Facturas Q4..." 
-                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        </div>
-
-                        <!-- Opción solo visible para Admin al subir -->
-                        <div id="adminPinOnUploadWrapper" class="hidden items-center gap-2 pt-1">
-                            <input type="checkbox" id="pinOnUploadCheckbox" class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500">
-                            <label for="pinOnUploadCheckbox" class="text-xs text-slate-700 font-medium cursor-pointer">Marcar como archivo permanente (Fijado)</label>
-                        </div>
-
-                        <button type="button" id="uploadActionBtn" onclick="triggerFileSelectOrUpload()" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            <span id="uploadBtnLabel">Seleccionar archivos para subir</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Barra de progreso de subida -->
-                <div id="uploadProgressContainer" class="hidden mt-4 p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl">
-                    <div class="flex items-center justify-between text-xs font-medium text-indigo-950 mb-1.5">
-                        <span id="uploadProgressText" class="flex items-center gap-2">
-                            <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-brand-600"></i>
-                            Subiendo archivo...
-                        </span>
-                        <span id="uploadProgressPercent" class="font-mono font-bold">0%</span>
-                    </div>
-                    <div class="w-full bg-indigo-200/70 rounded-full h-2 overflow-hidden">
-                        <div id="uploadProgressBar" class="bg-brand-600 h-2 rounded-full transition-all duration-150" style="width: 0%"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Listado de Archivos Compartidos -->
-            <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-                <!-- Cabecera y Filtros -->
-                <div class="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
-                            <i data-lucide="folder-open" class="w-5 h-5 text-brand-600"></i>
-                            <span>Archivos en el repositorio compartido</span>
-                            <span id="filesCountBadge" class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded-full">0</span>
-                        </h3>
-                    </div>
-
-                    <!-- Buscador y Filtro por Autor -->
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                        <!-- Filtro Autor -->
-                        <div class="inline-flex rounded-xl bg-slate-100 p-1 text-xs font-medium">
-                            <button type="button" onclick="setAuthorFilter('all')" id="filterAllBtn" class="px-3 py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition-all cursor-pointer">Todos</button>
-                            <button type="button" onclick="setAuthorFilter('mine')" id="filterMineBtn" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Subidos por mí</button>
-                            <button type="button" onclick="setAuthorFilter('other')" id="filterOtherBtn" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Del otro usuario</button>
-                        </div>
-
-                        <!-- Buscador -->
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                <i data-lucide="search" class="w-3.5 h-3.5"></i>
-                            </div>
-                            <input type="text" id="searchInput" oninput="renderFiles()" placeholder="Buscar archivo..." 
-                                class="w-full sm:w-52 pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabla / Lista Responsiva -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                <th class="py-3.5 px-5">Archivo y Descripción</th>
-                                <th class="py-3.5 px-4">Subido por</th>
-                                <th class="py-3.5 px-4">Tamaño</th>
-                                <th class="py-3.5 px-4">Fecha</th>
-                                <th class="py-3.5 px-4">Estado</th>
-                                <th class="py-3.5 px-5 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="filesTableBody" class="divide-y divide-slate-100 text-sm">
-                            <!-- Filas generadas dinámicamente -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Estado Vacío -->
-                <div id="emptyState" class="hidden py-12 px-4 text-center">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                        <i data-lucide="inbox" class="w-6 h-6"></i>
-                    </div>
-                    <h4 class="text-sm font-semibold text-slate-800">No se encontraron archivos</h4>
-                    <p class="text-xs text-slate-500 mt-1">Prueba cambiando los filtros o sube un nuevo documento arriba.</p>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- Footer discreto -->
-        <footer class="border-t border-slate-200 bg-white py-4 px-6 mt-auto">
-            <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-                <p>VaultShare • Portal de intercambio privado con control de permisos basado en roles (RBAC).</p>
-                <p class="font-mono text-[11px]">Demo interactiva • Los archivos reales se almacenan en tu bucket R2</p>
-            </div>
-        </footer>
+  <!-- MODAL DE CONFIRMACIÓN DE BORRADO (SOLO ADMIN) -->
+  <div id="delete-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <h3 class="text-lg font-semibold text-white">Eliminar archivo definitivamente</h3>
+      <p class="text-xs text-slate-400 mt-2">
+        ¿Estás segura de que deseas eliminar <strong id="delete-file-name" class="text-slate-200"></strong>? Esta acción eliminará el registro de la base de datos.
+      </p>
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="cancel-delete-btn" type="button"
+          class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition">
+          Cancelar
+        </button>
+        <button id="confirm-delete-btn" type="button"
+          class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white transition">
+          Sí, eliminar
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- ===================================================================== -->
-    <!-- LÓGICA DE APLICACIÓN (JAVASCRIPT)                                     -->
-    <!-- ===================================================================== -->
-    <script>
-        // ---------------------------------------------------------------------
-        // 1. CONFIGURACIÓN DE USUARIOS Y ROLES (DEMO)
-        // ---------------------------------------------------------------------
-        const USERS = {
-            cristina: {
-                id: 'user_admin',
-                username: 'cristina',
-                password: '123', // Aceptaremos 'admin123' o '123' para comodidad
-                altPassword: 'admin123',
-                displayName: 'Cristina (Administradora)',
-                shortName: 'Cristina',
-                role: 'admin' // Permisos totales: subir, descargar, fijar, eliminar
-            },
-            colaborador: {
-                id: 'user_guest',
-                username: 'colaborador',
-                password: '123', // Aceptaremos 'invitado123' o '123'
-                altPassword: 'invitado123',
-                displayName: 'Usuario 2 (Colaborador)',
-                shortName: 'Usuario 2',
-                role: 'guest' // Permisos restringidos: solo subir y descargar
-            }
-        };
+  <script>
+    // =========================================================================
+    // CONFIGURACIÓN DE SUPABASE
+    // =========================================================================
+    const SUPABASE_URL = 'https://waihazzpkagjuhtzgykb.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_MP2DESbzmTG7-JvoWnxS4Q_8JIv_hFD';
+    const ADMIN_EMAIL = 'csenderos@gmail.com';
 
-        const TOTAL_QUOTA_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB gratuitos de Cloudflare R2
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Estado global de la aplicación
-        let currentUser = null;
-        let currentAuthorFilter = 'all'; // 'all' | 'mine' | 'other'
-        let pendingFilesToUpload = [];
-        let fileIdToDelete = null;
+    // Estado global
+    let currentUser = null;
+    let isAdmin = false;
+    let allFiles = [];
+    let pendingDeleteId = null;
 
-        // Archivos iniciales precargados (simulando archivos pesados ya en el bucket)
-        let filesList = [
-            {
-                id: 'file_101',
-                name: 'Proyecto_Video_4K_Master_Final.mp4',
-                description: 'Montaje final exportado en ProRes para revisión y descarga directa',
-                sizeBytes: 2.45 * 1024 * 1024 * 1024, // 2.45 GB
-                type: 'video',
-                uploadedBy: 'user_admin',
-                uploaderName: 'Cristina',
-                uploadedAt: '18 nov 2026, 10:30',
-                isPinned: true, // Archivo fijado por Admin
-                blobUrl: null,
-                isMock: true
-            },
-            {
-                id: 'file_102',
-                name: 'Material_Bruto_Grabacion_CamaraA.zip',
-                description: 'Clips sin editar subidos para que los descargues y revises',
-                sizeBytes: 1.82 * 1024 * 1024 * 1024, // 1.82 GB
-                type: 'archive',
-                uploadedBy: 'user_guest',
-                uploaderName: 'Usuario 2',
-                uploadedAt: '18 nov 2026, 14:15',
-                isPinned: false, // Temporal (el Admin decidirá si se queda o se borra)
-                blobUrl: null,
-                isMock: true
-            },
-            {
-                id: 'file_103',
-                name: 'Documentacion_Contratos_Y_Facturas_2026.pdf',
-                description: 'Pack completo de documentación administrativa firmada',
-                sizeBytes: 48.5 * 1024 * 1024, // 48.5 MB
-                type: 'document',
-                uploadedBy: 'user_admin',
-                uploaderName: 'Cristina',
-                uploadedAt: '17 nov 2026, 18:05',
-                isPinned: true,
-                blobUrl: null,
-                isMock: true
-            }
-        ];
+    // Elementos del DOM
+    const loginView = document.getElementById('login-view');
+    const appView = document.getElementById('app-view');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const roleBadge = document.getElementById('role-badge');
+    const userEmailDisplay = document.getElementById('user-email-display');
+    const uploadForm = document.getElementById('upload-form');
+    const filesTbody = document.getElementById('files-tbody');
+    const emptyState = document.getElementById('empty-state');
+    const filesCount = document.getElementById('files-count');
+    const searchInput = document.getElementById('search-input');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const deleteModal = document.getElementById('delete-modal');
+    const deleteFileName = document.getElementById('delete-file-name');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
-        // ---------------------------------------------------------------------
-        // 2. INICIALIZACIÓN Y EVENTOS
-        // ---------------------------------------------------------------------
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            setupDragAndDrop();
+    // Utilidades
+    function showToast(message, type = 'info') {
+      const banner = document.getElementById('toast-banner');
+      const msgEl = document.getElementById('toast-message');
+      banner.className = 'p-4 rounded-xl border text-xs flex items-center justify-between ';
+      if (type === 'error') {
+        banner.className += 'bg-rose-500/10 border-rose-500/30 text-rose-300';
+      } else if (type === 'success') {
+        banner.className += 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300';
+      } else {
+        banner.className += 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300';
+      }
+      msgEl.textContent = message;
+      banner.classList.remove('hidden');
+    }
 
-            // Manejo del formulario de login
-            document.getElementById('loginForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const userVal = document.getElementById('usernameInput').value.trim().toLowerCase();
-                const passVal = document.getElementById('passwordInput').value.trim();
-                attemptLogin(userVal, passVal);
-            });
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 
-            // Botón de confirmación de borrado en modal
-            document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-                if (fileIdToDelete) {
-                    executeDeleteFile(fileIdToDelete);
-                    closeConfirmModal();
-                }
-            });
-        });
+    function formatDate(isoString) {
+      return new Date(isoString).toLocaleString('es-ES', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    }
 
-        // ---------------------------------------------------------------------
-        // 3. AUTENTICACIÓN Y GESTIÓN DE SESIÓN
-        // ---------------------------------------------------------------------
-        function quickLogin(profileType) {
-            if (profileType === 'admin') {
-                document.getElementById('usernameInput').value = 'cristina';
-                document.getElementById('passwordInput').value = 'admin123';
-                attemptLogin('cristina', 'admin123');
-            } else {
-                document.getElementById('usernameInput').value = 'colaborador';
-                document.getElementById('passwordInput').value = 'invitado123';
-                attemptLogin('colaborador', 'invitado123');
-            }
+    // Gestión de sesión
+    async function initSession() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user) {
+        enterApp(session.user);
+      } else {
+        showLogin();
+      }
+    }
+
+    function showLogin() {
+      currentUser = null;
+      isAdmin = false;
+      appView.classList.add('hidden');
+      loginView.classList.remove('hidden');
+    }
+
+    function enterApp(user) {
+      currentUser = user;
+      isAdmin = (user.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+      userEmailDisplay.textContent = user.email;
+      if (isAdmin) {
+        roleBadge.textContent = 'Administradora (Control total)';
+        roleBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium border bg-indigo-500/10 border-indigo-500/30 text-indigo-300';
+      } else {
+        roleBadge.textContent = 'Colaborador (Subida / Lectura)';
+        roleBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-800 border-slate-700 text-slate-300';
+      }
+
+      loginView.classList.add('hidden');
+      appView.classList.remove('hidden');
+      loadFiles();
+    }
+
+    // Login submit
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.classList.add('hidden');
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Verificando credenciales...';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar al repositorio';
+
+      if (error) {
+        loginError.textContent = 'Error de acceso: ' + error.message;
+        loginError.classList.remove('hidden');
+        return;
+      }
+
+      if (data?.user) {
+        enterApp(data.user);
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      showLogin();
+    });
+
+    // Cargar inventario desde Postgres (SELECT)
+    async function loadFiles() {
+      const { data, error } = await supabaseClient
+        .from('archivos')
+        .select('*')
+        .order('creado_en', { ascending: false });
+
+      if (error) {
+        showToast('Error al cargar inventario: ' + error.message, 'error');
+        return;
+      }
+
+      allFiles = data || [];
+      renderFiles();
+    }
+
+    function renderFiles() {
+      const query = searchInput.value.toLowerCase().trim();
+      const filtered = allFiles.filter(f => f.nombre.toLowerCase().includes(query));
+
+      filesCount.textContent = filtered.length;
+      filesTbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      filtered.forEach(file => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+
+        const isMine = file.subido_por === currentUser.id;
+        const badgeEstado = file.es_permanente
+          ? '<span class="px-2 py-0.5 rounded-md text-[11px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Permanente</span>'
+          : '<span class="px-2 py-0.5 rounded-md text-[11px] bg-slate-800 text-slate-400">Estándar</span>';
+
+        // Botones de acción según rol
+        let actionsHtml = '';
+        if (isAdmin) {
+          actionsHtml = `
+            <button onclick="togglePermanent('${file.id}', ${!file.es_permanente})"
+              class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 transition mr-1.5">
+              ${file.es_permanente ? 'Quitar fijo' : 'Fijar'}
+            </button>
+            <button onclick="openDeleteModal('${file.id}', '${file.nombre.replace(/'/g, "\\'")}')"
+              class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs text-rose-300 transition">
+              Eliminar
+            </button>
+          `;
+        } else {
+          actionsHtml = `<span class="text-[11px] text-slate-500">Solo lectura / subida</span>`;
         }
 
-        function attemptLogin(username, password) {
-            const errorBox = document.getElementById('loginError');
-            const userRecord = USERS[username];
-
-            if (userRecord && (password === userRecord.password || password === userRecord.altPassword)) {
-                errorBox.classList.add('hidden');
-                currentUser = userRecord;
-                enterDashboard();
-                showToast(`Sesión iniciada como ${currentUser.displayName}`, 'success');
-            } else {
-                errorBox.classList.remove('hidden');
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            pendingFilesToUpload = [];
-            document.getElementById('dashboardView').classList.add('hidden');
-            document.getElementById('dashboardView').classList.remove('flex');
-            document.getElementById('loginView').classList.remove('hidden');
-            document.getElementById('passwordInput').value = '';
-            showToast('Has cerrado sesión correctamente', 'info');
-        }
-
-        function enterDashboard() {
-            document.getElementById('loginView').classList.add('hidden');
-            const dash = document.getElementById('dashboardView');
-            dash.classList.remove('hidden');
-            dash.classList.add('flex');
-
-            updateUIForRole();
-            renderFiles();
-        }
-
-        // ---------------------------------------------------------------------
-        // 4. ADAPTACIÓN DE INTERFAZ SEGÚN ROL (ADMIN VS COLABORADOR)
-        // ---------------------------------------------------------------------
-        function updateUIForRole() {
-            const isAdmin = currentUser.role === 'admin';
-            
-            // Badge en header
-            const badgeContainer = document.getElementById('roleBadgeContainer');
-            if (isAdmin) {
-                badgeContainer.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-brand-700 text-xs font-semibold';
-                badgeContainer.innerHTML = `<i data-lucide="crown" class="w-3.5 h-3.5 text-brand-600"></i><span>${currentUser.shortName} • Control Total</span>`;
-            } else {
-                badgeContainer.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 text-xs font-semibold';
-                badgeContainer.innerHTML = `<i data-lucide="user-check" class="w-3.5 h-3.5 text-slate-600"></i><span>${currentUser.shortName} • Solo Subida/Descarga</span>`;
-            }
-
-            // Tarjeta de bienvenida y explicación de permisos
-            const roleIconBox = document.getElementById('roleIconBox');
-            const welcomeTitle = document.getElementById('welcomeTitle');
-            const rolePill = document.getElementById('rolePill');
-            const roleDescription = document.getElementById('roleDescription');
-            const adminPinWrapper = document.getElementById('adminPinOnUploadWrapper');
-
-            welcomeTitle.textContent = `Hola, ${currentUser.shortName}`;
-
-            if (isAdmin) {
-                roleIconBox.className = 'p-3 rounded-xl bg-brand-600 text-white shrink-0 shadow-sm';
-                roleIconBox.innerHTML = `<i data-lucide="shield-check" class="w-6 h-6"></i>`;
-                rolePill.className = 'px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-brand-100 text-brand-700';
-                rolePill.textContent = 'Administradora';
-                roleDescription.textContent = 'Tienes control absoluto sobre el repositorio: puedes subir y descargar archivos, marcar documentos como permanentes o temporales y eliminar definitivamente cualquier fichero para liberar espacio.';
-                adminPinWrapper.classList.remove('hidden');
-                adminPinWrapper.classList.add('flex');
-            } else {
-                roleIconBox.className = 'p-3 rounded-xl bg-slate-800 text-white shrink-0 shadow-sm';
-                roleIconBox.innerHTML = `<i data-lucide="upload" class="w-6 h-6"></i>`;
-                rolePill.className = 'px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-slate-200 text-slate-700';
-                rolePill.textContent = 'Colaborador (Permisos Limitados)';
-                roleDescription.textContent = 'Puedes subir archivos pesados para compartirlos y descargar los documentos disponibles. Por seguridad, no tienes permisos para borrar, sobrescribir ni alterar el estado de archivos existentes.';
-                adminPinWrapper.classList.add('hidden');
-                adminPinWrapper.classList.remove('flex');
-            }
-
-            updateStorageCard();
-            lucide.createIcons();
-        }
-
-        function updateStorageCard() {
-            const storageCard = document.getElementById('storageCard');
-            const isAdmin = currentUser.role === 'admin';
-
-            if (isAdmin) {
-                const usedBytes = filesList.reduce((acc, f) => acc + f.sizeBytes, 0);
-                const percent = Math.min(100, ((usedBytes / TOTAL_QUOTA_BYTES) * 100)).toFixed(1);
-                
-                storageCard.innerHTML = `
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                            <i data-lucide="database" class="w-4 h-4 text-brand-600"></i>
-                            Cuota Cloudflare R2
-                        </span>
-                        <span class="text-xs font-mono font-bold text-brand-700">${percent}% usado</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-2 border border-slate-200/60">
-                        <div class="bg-brand-600 h-2.5 rounded-full transition-all duration-300" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Ocupado: <strong class="text-slate-800">${formatBytes(usedBytes)}</strong></span>
-                        <span>Gratis: <strong class="text-slate-800">10.00 GB</strong></span>
-                    </div>
-                `;
-            } else {
-                storageCard.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
-                            <i data-lucide="lock" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-900">Bóveda Protegida</h4>
-                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                                Tus subidas quedan registradas automáticamente. Solo la administradora puede depurar o eliminar ficheros del servidor.
-                            </p>
-                        </div>
-                    </div>
-                `;
-            }
-            lucide.createIcons();
-        }
-
-        // ---------------------------------------------------------------------
-        // 5. SUBIDA DE ARCHIVOS (DRAG & DROP + SELECTOR + PROGRESO SIMULADO)
-        // ---------------------------------------------------------------------
-        function setupDragAndDrop() {
-            const dropZone = document.getElementById('dropZone');
-            const fileInput = document.getElementById('fileInput');
-
-            dropZone.addEventListener('click', () => fileInput.click());
-
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('drag-active');
-            });
-
-            ['dragleave', 'dragend'].forEach(type => {
-                dropZone.addEventListener(type, () => dropZone.classList.remove('drag-active'));
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-active');
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    handleFilesSelected(e.dataTransfer.files);
-                }
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                    handleFilesSelected(e.target.files);
-                }
-            });
-        }
-
-        function handleFilesSelected(fileListObj) {
-            pendingFilesToUpload = Array.from(fileListObj);
-            const previewEl = document.getElementById('selectedFilesPreview');
-            const btnLabel = document.getElementById('uploadBtnLabel');
-
-            if (pendingFilesToUpload.length === 1) {
-                const f = pendingFilesToUpload[0];
-                previewEl.textContent = `Seleccionado: ${f.name} (${formatBytes(f.size)})`;
-                btnLabel.textContent = 'Subir archivo ahora';
-            } else {
-                const totalSize = pendingFilesToUpload.reduce((acc, f) => acc + f.size, 0);
-                previewEl.textContent = `${pendingFilesToUpload.length} archivos seleccionados (${formatBytes(totalSize)} en total)`;
-                btnLabel.textContent = `Subir ${pendingFilesToUpload.length} archivos ahora`;
-            }
-            previewEl.classList.remove('hidden');
-        }
-
-        function triggerFileSelectOrUpload() {
-            if (pendingFilesToUpload.length === 0) {
-                document.getElementById('fileInput').click();
-                return;
-            }
-            startSimulatedUpload();
-        }
-
-        function startSimulatedUpload() {
-            const progressContainer = document.getElementById('uploadProgressContainer');
-            const progressBar = document.getElementById('uploadProgressBar');
-            const progressPercent = document.getElementById('uploadProgressPercent');
-            const progressText = document.getElementById('uploadProgressText');
-            const uploadBtn = document.getElementById('uploadActionBtn');
-
-            progressContainer.classList.remove('hidden');
-            uploadBtn.disabled = true;
-            uploadBtn.classList.add('opacity-60', 'cursor-not-allowed');
-
-            let progress = 0;
-            const fileNameDisplay = pendingFilesToUpload.length === 1 
-                ? pendingFilesToUpload[0].name 
-                : `${pendingFilesToUpload.length} archivos`;
-
-            progressText.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-brand-600"></i> Transfiriendo "${fileNameDisplay}" a almacenamiento seguro...`;
-            lucide.createIcons();
-
-            const interval = setInterval(() => {
-                progress += Math.floor(Math.random() * 18) + 12;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    progressBar.style.width = '100%';
-                    progressPercent.textContent = '100%';
-
-                    setTimeout(() => {
-                        finalizeUpload();
-                        progressContainer.classList.add('hidden');
-                        progressBar.style.width = '0%';
-                        uploadBtn.disabled = false;
-                        uploadBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                    }, 350);
-                } else {
-                    progressBar.style.width = `${progress}%`;
-                    progressPercent.textContent = `${progress}%`;
-                }
-            }, 180);
-        }
-
-        function finalizeUpload() {
-            const note = document.getElementById('fileNoteInput').value.trim();
-            const isAdmin = currentUser.role === 'admin';
-            const pinChecked = isAdmin && document.getElementById('pinOnUploadCheckbox').checked;
-
-            const now = new Date();
-            const formattedDate = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' +
-                                  now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-            pendingFilesToUpload.forEach(file => {
-                // Creamos una Blob URL real para que el usuario pueda descargarlo de inmediato en esta sesión
-                const objectUrl = URL.createObjectURL(file);
-
-                filesList.unshift({
-                    id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    name: file.name,
-                    description: note || 'Sin descripción adicional',
-                    sizeBytes: file.size,
-                    type: detectFileCategory(file.name),
-                    uploadedBy: currentUser.id,
-                    uploaderName: currentUser.shortName,
-                    uploadedAt: formattedDate,
-                    isPinned: pinChecked,
-                    blobUrl: objectUrl,
-                    isMock: false
-                });
-            });
-
-            // Resetear formulario de subida
-            pendingFilesToUpload = [];
-            document.getElementById('fileInput').value = '';
-            document.getElementById('fileNoteInput').value = '';
-            document.getElementById('pinOnUploadCheckbox').checked = false;
-            document.getElementById('selectedFilesPreview').classList.add('hidden');
-            document.getElementById('uploadBtnLabel').textContent = 'Seleccionar archivos para subir';
-
-            updateStorageCard();
-            renderFiles();
-            showToast('Archivo(s) subido(s) y disponible(s) para descarga', 'success');
-        }
-
-        // ---------------------------------------------------------------------
-        // 6. RENDERIZADO DE TABLA Y ACCIONES DE ARCHIVOS
-        // ---------------------------------------------------------------------
-        function setAuthorFilter(filter) {
-            currentAuthorFilter = filter;
-            
-            // Actualizar estilos de botones de filtro
-            const btns = {
-                all: document.getElementById('filterAllBtn'),
-                mine: document.getElementById('filterMineBtn'),
-                other: document.getElementById('filterOtherBtn')
-            };
-
-            Object.keys(btns).forEach(key => {
-                if (key === filter) {
-                    btns[key].className = 'px-3 py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition-all cursor-pointer';
-                } else {
-                    btns[key].className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
-                }
-            });
-
-            renderFiles();
-        }
-
-        function renderFiles() {
-            const tbody = document.getElementById('filesTableBody');
-            const emptyState = document.getElementById('emptyState');
-            const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
-            const isAdmin = currentUser.role === 'admin';
-
-            // Filtrar archivos
-            const filtered = filesList.filter(file => {
-                const matchesSearch = file.name.toLowerCase().includes(searchQuery) || 
-                                      file.description.toLowerCase().includes(searchQuery);
-                
-                let matchesAuthor = true;
-                if (currentAuthorFilter === 'mine') {
-                    matchesAuthor = file.uploadedBy === currentUser.id;
-                } else if (currentAuthorFilter === 'other') {
-                    matchesAuthor = file.uploadedBy !== currentUser.id;
-                }
-
-                return matchesSearch && matchesAuthor;
-            });
-
-            document.getElementById('filesCountBadge').textContent = filtered.length;
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-            tbody.innerHTML = filtered.map(file => {
-                const isMine = file.uploadedBy === currentUser.id;
-                const iconInfo = getFileIconConfig(file.type);
-
-                // Badge de estado (Permanente vs Temporal)
-                const statusBadge = file.isPinned
-                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                         <i data-lucide="pin" class="w-3 h-3"></i> Conservado
-                       </span>`
-                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/70">
-                         <i data-lucide="clock" class="w-3 h-3"></i> Pendiente revisión
-                       </span>`;
-
-                // Botones exclusivos de Administrador (Fijar/Soltar + Eliminar)
-                const adminControls = isAdmin ? `
-                    <button type="button" onclick="togglePinFile('${file.id}')" 
-                        title="${file.isPinned ? 'Quitar marca de conservado' : 'Marcar para conservar permanentemente'}"
-                        class="p-2 rounded-xl border transition-colors cursor-pointer ${file.isPinned 
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' 
-                            : 'bg-white border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-300'}">
-                        <i data-lucide="${file.isPinned ? 'pin-off' : 'pin'}" class="w-4 h-4"></i>
-                    </button>
-                    <button type="button" onclick="promptDeleteFile('${file.id}')" 
-                        title="Eliminar archivo definitivamente"
-                        class="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                ` : '';
-
-                return `
-                    <tr class="hover:bg-slate-50/90 transition-colors group">
-                        <td class="py-4 px-5">
-                            <div class="flex items-start gap-3">
-                                <div class="p-2.5 rounded-xl ${iconInfo.bg} ${iconInfo.text} shrink-0 mt-0.5">
-                                    <i data-lucide="${iconInfo.icon}" class="w-5 h-5"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-semibold text-slate-900 text-sm truncate max-w-[220px] sm:max-w-xs md:max-w-sm" title="${escapeHtml(file.name)}">
-                                        ${escapeHtml(file.name)}
-                                    </p>
-                                    <p class="text-xs text-slate-500 truncate max-w-[220px] sm:max-w-xs md:max-w-sm mt-0.5">
-                                        ${escapeHtml(file.description)}
-                                    </p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-4 px-4 whitespace-nowrap">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-medium ${isMine ? 'text-brand-700' : 'text-slate-700'}">
-                                <span class="w-2 h-2 rounded-full ${file.uploadedBy === 'user_admin' ? 'bg-brand-600' : 'bg-slate-400'}"></span>
-                                ${escapeHtml(file.uploaderName)} ${isMine ? '(Tú)' : ''}
-                            </span>
-                        </td>
-                        <td class="py-4 px-4 whitespace-nowrap font-mono text-xs text-slate-600">
-                            ${formatBytes(file.sizeBytes)}
-                        </td>
-                        <td class="py-4 px-4 whitespace-nowrap text-xs text-slate-500">
-                            ${file.uploadedAt}
-                        </td>
-                        <td class="py-4 px-4 whitespace-nowrap">
-                            ${statusBadge}
-                        </td>
-                        <td class="py-4 px-5 whitespace-nowrap text-right">
-                            <div class="inline-flex items-center justify-end gap-1.5">
-                                <button type="button" onclick="downloadFile('${file.id}')" 
-                                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer">
-                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                                    <span>Descargar</span>
-                                </button>
-                                ${adminControls}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        // ---------------------------------------------------------------------
-        // 7. ACCIONES: DESCARGA, FIJAR/CONSERVAR Y ELIMINAR (SOLO ADMIN)
-        // ---------------------------------------------------------------------
-        function downloadFile(fileId) {
-            const file = filesList.find(f => f.id === fileId);
-            if (!file) return;
-
-            if (file.blobUrl) {
-                // Descarga real del archivo subido en la sesión
-                const a = document.createElement('a');
-                a.href = file.blobUrl;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast(`Descargando "${file.name}"...`, 'success');
-            } else {
-                // Para los archivos de ejemplo precargados, generamos un fichero de comprobante descargable
-                const sampleContent = `ARCHIVO DE DEMOSTRACIÓN VAULTSHARE\n` +
-                                      `====================================\n` +
-                                      `Nombre original: ${file.name}\n` +
-                                      `Tamaño simulado en R2: ${formatBytes(file.sizeBytes)}\n` +
-                                      `Subido por: ${file.uploaderName}\n` +
-                                      `Fecha: ${file.uploadedAt}\n` +
-                                      `Descripción: ${file.description}\n\n` +
-                                      `Nota: En producción, este botón descarga directamente desde la Presigned URL de Cloudflare R2 a máxima velocidad.`;
-                
-                const blob = new Blob([sampleContent], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${file.name}.info.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast(`Descarga iniciada para "${file.name}"`, 'success');
-            }
-        }
-
-        function togglePinFile(fileId) {
-            // Verificación de seguridad de rol
-            if (currentUser.role !== 'admin') {
-                showToast('Acción denegada: Solo la administradora puede cambiar el estado.', 'error');
-                return;
-            }
-
-            const file = filesList.find(f => f.id === fileId);
-            if (!file) return;
-
-            file.isPinned = !file.isPinned;
-            renderFiles();
-            showToast(
-                file.isPinned 
-                    ? `"${file.name}" marcado para conservarse.` 
-                    : `"${file.name}" marcado como pendiente de revisión.`,
-                'info'
-            );
-        }
-
-        function promptDeleteFile(fileId) {
-            if (currentUser.role !== 'admin') {
-                showToast('Acción denegada: No tienes permisos para eliminar archivos.', 'error');
-                return;
-            }
-
-            const file = filesList.find(f => f.id === fileId);
-            if (!file) return;
-
-            fileIdToDelete = fileId;
-            document.getElementById('confirmModalText').innerHTML = 
-                `¿Estás segura de que deseas eliminar <strong>"${escapeHtml(file.name)}"</strong> (${formatBytes(file.sizeBytes)})? Se liberará ese espacio inmediatamente.`;
-            
-            const modal = document.getElementById('confirmModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            lucide.createIcons();
-        }
-
-        function closeConfirmModal() {
-            fileIdToDelete = null;
-            const modal = document.getElementById('confirmModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function executeDeleteFile(fileId) {
-            if (currentUser.role !== 'admin') return;
-
-            const idx = filesList.findIndex(f => f.id === fileId);
-            if (idx !== -1) {
-                const removed = filesList[idx];
-                if (removed.blobUrl) {
-                    URL.revokeObjectURL(removed.blobUrl);
-                }
-                filesList.splice(idx, 1);
-                updateStorageCard();
-                renderFiles();
-                showToast(`Archivo "${removed.name}" eliminado definitivamente.`, 'success');
-            }
-        }
-
-        // ---------------------------------------------------------------------
-        // 8. MODALES, UTILIDADES Y NOTIFICACIONES
-        // ---------------------------------------------------------------------
-        function toggleArchitectureModal(show) {
-            const modal = document.getElementById('architectureModal');
-            if (show) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                lucide.createIcons();
-            } else {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-        function copySqlCode() {
-            const codeText = document.getElementById('sqlCodeBlock').innerText;
-            const textarea = document.createElement('textarea');
-            textarea.value = codeText;
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showToast('Código SQL copiado al portapapeles', 'success');
-            } catch (err) {
-                showToast('No se pudo copiar automáticamente', 'error');
-            }
-            document.body.removeChild(textarea);
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            const styles = {
-                success: 'bg-slate-900 text-white border-slate-800',
-                error: 'bg-rose-600 text-white border-rose-700',
-                info: 'bg-brand-600 text-white border-brand-700'
-            };
-
-            const icons = {
-                success: 'check-circle-2',
-                error: 'alert-octagon',
-                info: 'info'
-            };
-
-            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0 ${styles[type] || styles.info}`;
-            toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i><span>${escapeHtml(message)}</span>`;
-            
-            container.appendChild(toast);
-            lucide.createIcons();
-
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            });
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3200);
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function detectFileCategory(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return 'video';
-            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
-            if (['jpg', 'jpeg', 'png', 'webp', 'svg', 'raw'].includes(ext)) return 'image';
-            if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'].includes(ext)) return 'document';
-            return 'other';
-        }
-
-        function getFileIconConfig(type) {
-            switch (type) {
-                case 'video':
-                    return { icon: 'film', bg: 'bg-purple-50', text: 'text-purple-600' };
-                case 'archive':
-                    return { icon: 'archive', bg: 'bg-amber-50', text: 'text-amber-600' };
-                case 'image':
-                    return { icon: 'image', bg: 'bg-sky-50', text: 'text-sky-600' };
-                case 'document':
-                    return { icon: 'file-text', bg: 'bg-rose-50', text: 'text-rose-600' };
-                default:
-                    return { icon: 'file', bg: 'bg-slate-100', text: 'text-slate-600' };
-            }
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-    </script>
+        tr.innerHTML = `
+          <td class="py-3.5 px-6">
+            <div class="font-medium text-slate-100">${file.nombre}</div>
+            <div class="text-[11px] text-slate-500 font-mono mt-0.5">${file.r2_key} ${isMine ? '• Subido por ti' : ''}</div>
+          </td>
+          <td class="py-3.5 px-4 text-xs text-slate-300 whitespace-nowrap">${formatBytes(file.tamano_bytes)}</td>
+          <td class="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">${formatDate(file.creado_en)}</td>
+          <td class="py-3.5 px-4 whitespace-nowrap">${badgeEstado}</td>
+          <td class="py-3.5 px-6 text-right whitespace-nowrap">${actionsHtml}</td>
+        `;
+        filesTbody.appendChild(tr);
+      });
+    }
+
+    // Registrar archivo en Postgres (INSERT)
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('file-input');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const uploadBtn = document.getElementById('upload-btn');
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Guardando...';
+
+      const esPermanente = document.getElementById('permanent-checkbox').checked;
+      const uniqueKey = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+
+      const { error } = await supabaseClient
+        .from('archivos')
+        .insert([{
+          nombre: file.name,
+          tamano_bytes: file.size,
+          mime_type: file.type || 'application/octet-stream',
+          r2_key: uniqueKey,
+          subido_por: currentUser.id,
+          es_permanente: esPermanente
+        }]);
+
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = 'Guardar en inventario';
+
+      if (error) {
+        showToast('Error al registrar archivo: ' + error.message, 'error');
+        return;
+      }
+
+      uploadForm.reset();
+      showToast('Archivo registrado correctamente en Supabase Postgres.', 'success');
+      loadFiles();
+    });
+
+    // Actualizar estado (UPDATE - protegido por RLS solo para Admin)
+    window.togglePermanent = async (id, newValue) => {
+      const { error } = await supabaseClient
+        .from('archivos')
+        .update({ es_permanente: newValue })
+        .eq('id', id);
+
+      if (error) {
+        showToast('Operación bloqueada por seguridad (RLS): ' + error.message, 'error');
+        return;
+      }
+      loadFiles();
+    };
+
+    // Modal y borrado (DELETE - protegido por RLS solo para Admin)
+    window.openDeleteModal = (id, name) => {
+      pendingDeleteId = id;
+      deleteFileName.textContent = name;
+      deleteModal.classList.remove('hidden');
+    };
+
+    cancelDeleteBtn.addEventListener('click', () => {
+      pendingDeleteId = null;
+      deleteModal.classList.add('hidden');
+    });
+
+    confirmDeleteBtn.addEventListener('click', async () => {
+      if (!pendingDeleteId) return;
+      confirmDeleteBtn.disabled = true;
+
+      const { error } = await supabaseClient
+        .from('archivos')
+        .delete()
+        .eq('id', pendingDeleteId);
+
+      confirmDeleteBtn.disabled = false;
+      deleteModal.classList.add('hidden');
+      pendingDeleteId = null;
+
+      if (error) {
+        showToast('Borrado rechazado por RLS: ' + error.message, 'error');
+        return;
+      }
+
+      showToast('Archivo eliminado del inventario.', 'success');
+      loadFiles();
+    });
+
+    searchInput.addEventListener('input', renderFiles);
+    refreshBtn.addEventListener('click', loadFiles);
+
+    // Iniciar
+    initSession();
+  </script>
 </body>
 </html>
